@@ -57,6 +57,9 @@ jobs:
     - uses: actions/checkout@v6
     - name: download releases files
       uses: actions/download-artifact@v8
+      with:
+        name: packaged_addon
+        path: packaged_addon
     - name: Display structure of downloaded files
       run: ls -R
     - name: Calculate sha256
