@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import ui
 import api
 import wx
@@ -11,6 +12,12 @@ import characterProcessing
 import languageHandler
 import scriptHandler
 from scriptHandler import script
+
+# Make the vendored, pure-Python markdown library importable at runtime.
+# NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
+_VENDOR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_vendor")
+if _VENDOR_DIR not in sys.path:
+	sys.path.insert(0, _VENDOR_DIR)
 
 
 class SettingsDialog(wx.Dialog):
