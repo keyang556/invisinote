@@ -125,7 +125,7 @@ html = markdown.markdown(
 	],
 )
 
-for needle in ("<h1>", "<strong>", '<a href="https://www.nvaccess.org">', "<ul>", "<table>", "<code>"):
+for needle in ("<h1>", "<strong>", '<a href="https://www.nvaccess.org">', "<ul>", "<table>", "<code"):
 	assert needle in html, f"missing {needle!r} in:\n{html}"
 
 print("OK: vendored markdown renders headings, bold, links, lists, tables, code")

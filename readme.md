@@ -19,6 +19,7 @@ Virtually browse notes from configured folders with the following gestures:
 - NVDA+ALT+H: start of line
 - NVDA+ALT+': end of line
 - NVDA+ALT+SHIFT+A: read note
+- NVDA+ALT+Space: render note as markdown
 - NVDA+ALT+A: copy note
 - NVDA+ALT+;: copy line
 - NVDA+ALT+F9: set selection start

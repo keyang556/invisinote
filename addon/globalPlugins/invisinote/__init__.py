@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import ui
 import api
 import wx
@@ -11,6 +12,13 @@ import characterProcessing
 import languageHandler
 import scriptHandler
 from scriptHandler import script
+from logHandler import log
+
+# Make the vendored, pure-Python markdown library importable at runtime.
+# NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
+_VENDOR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_vendor")
+if _VENDOR_DIR not in sys.path:
+	sys.path.insert(0, _VENDOR_DIR)
 
 
 class SettingsDialog(wx.Dialog):
@@ -292,6 +300,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			folder = os.path.basename(self.notesPath.rstrip("/\\")) or self.notesPath
 			ui.message(_("No next folder, {}").format(folder))
 
+	def _render_markdown(self, text):
+		try:
+			import markdown
+		except ImportError:
+			return None
+		try:
+			return markdown.markdown(
+				text,
+				extensions=[
+					"markdown.extensions.fenced_code",
+					"markdown.extensions.tables",
+					"markdown.extensions.sane_lists",
+				],
+			)
+		except Exception:
+			log.exception("Markdown rendering failed")
+			return None
+
+	@script(description=_("Render note as markdown"))
+	def script_render_markdown(self, gesture):
+		content = self._get_current_note_content()
+		if not content:
+			ui.message(_("Empty note"))
+			return
+		html = self._render_markdown(content)
+		if html is None:
+			ui.message(_("Markdown rendering unavailable"))
+			return
+		title = os.path.basename(self.notes[self.currentNoteIndex])
+		ui.browseableMessage(html, title=title, isHtml=True)
+
 	@script(description=_("Read current note"))
 	def script_read_note(self, gesture):
 		content = self._get_current_note_content()
@@ -479,6 +518,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+ALT+H": "start_of_line",
 		"kb:NVDA+ALT+'": "end_of_line",
 		"kb:NVDA+ALT+SHIFT+A": "read_note",
+		"kb:NVDA+ALT+SPACE": "render_markdown",
 		"kb:NVDA+ALT+A": "copy_note",
 		"kb:NVDA+ALT+;": "copy_line",
 		"kb:NVDA+ALT+F9": "set_selection_start",
