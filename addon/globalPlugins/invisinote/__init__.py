@@ -12,6 +12,7 @@ import characterProcessing
 import languageHandler
 import scriptHandler
 from scriptHandler import script
+from logHandler import log
 
 # Make the vendored, pure-Python markdown library importable at runtime.
 # NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
@@ -304,14 +305,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			import markdown
 		except ImportError:
 			return None
-		return markdown.markdown(
-			text,
-			extensions=[
-				"markdown.extensions.fenced_code",
-				"markdown.extensions.tables",
-				"markdown.extensions.sane_lists",
-			],
-		)
+		try:
+			return markdown.markdown(
+				text,
+				extensions=[
+					"markdown.extensions.fenced_code",
+					"markdown.extensions.tables",
+					"markdown.extensions.sane_lists",
+				],
+			)
+		except Exception:
+			log.exception("Markdown rendering failed")
+			return None
 
 	@script(description=_("Render note as markdown"))
 	def script_render_markdown(self, gesture):
