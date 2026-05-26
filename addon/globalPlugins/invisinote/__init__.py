@@ -343,6 +343,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					our_pid,
 					deadline,
 				)
+			else:
+				log.debugWarning("invisinote: timed out finding the render window; leaving it visible")
 		except Exception:
 			log.exception("invisinote: could not move render window off-screen; leaving it visible")
 
@@ -358,8 +360,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		title = os.path.basename(self.notes[self.currentNoteIndex])
 		# Snapshot windows, then arm a timer that finds the about-to-open
-		# browse-mode window and slides it off-screen. browseableMessage may
-		# block in a modal loop until Escape; the wx timer fires inside it.
+		# browse-mode window and slides it off-screen. browseableMessage blocks
+		# in a modal loop until Escape on known NVDA builds; arming BEFORE the
+		# call is what lets the wx timer fire inside that loop.
 		try:
 			before = set(_window.enum_top_level_windows())
 			deadline = time.time() + _RENDER_HIDE_TIMEOUT_S
