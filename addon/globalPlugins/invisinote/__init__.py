@@ -299,6 +299,33 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			folder = os.path.basename(self.notesPath.rstrip("/\\")) or self.notesPath
 			ui.message(_("No next folder, {}").format(folder))
 
+	def _render_markdown(self, text):
+		try:
+			import markdown
+		except ImportError:
+			return None
+		return markdown.markdown(
+			text,
+			extensions=[
+				"markdown.extensions.fenced_code",
+				"markdown.extensions.tables",
+				"markdown.extensions.sane_lists",
+			],
+		)
+
+	@script(description=_("Render note as markdown"))
+	def script_render_markdown(self, gesture):
+		content = self._get_current_note_content()
+		if not content:
+			ui.message(_("Empty note"))
+			return
+		html = self._render_markdown(content)
+		if html is None:
+			ui.message(_("Markdown rendering unavailable"))
+			return
+		title = os.path.basename(self.notes[self.currentNoteIndex])
+		ui.browseableMessage(html, title=title, isHtml=True)
+
 	@script(description=_("Read current note"))
 	def script_read_note(self, gesture):
 		content = self._get_current_note_content()
@@ -486,6 +513,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+ALT+H": "start_of_line",
 		"kb:NVDA+ALT+'": "end_of_line",
 		"kb:NVDA+ALT+SHIFT+A": "read_note",
+		"kb:NVDA+ALT+SPACE": "render_markdown",
 		"kb:NVDA+ALT+A": "copy_note",
 		"kb:NVDA+ALT+;": "copy_line",
 		"kb:NVDA+ALT+F9": "set_selection_start",
