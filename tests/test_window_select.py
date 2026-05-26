@@ -24,6 +24,13 @@ class SelectRenderWindowTests(unittest.TestCase):
 		metadata = {2: (True, "other"), 3: (True, "note.txt")}
 		self.assertEqual(_window.select_render_window(before, after, metadata, "note.txt"), 3)
 
+	def test_single_new_untitled_candidate_is_selected(self):
+		"""Window opened before its title was set — single-candidate fallback fires."""
+		before = {1}
+		after = [1, 55]
+		metadata = {55: (True, "")}  # empty title, not yet set
+		self.assertEqual(_window.select_render_window(before, after, metadata, "note.txt"), 55)
+
 	def test_no_title_match_and_multiple_candidates_returns_none(self):
 		before = {1}
 		after = [1, 2, 3]

@@ -64,11 +64,14 @@ def enum_top_level_windows():
 		handles.append(int(hwnd))
 		return True
 
+	# EnumWindows is synchronous; _cb stays alive on the call stack for its full
+	# duration, so no module-level keep-alive is needed.
 	u.EnumWindows(_cb, 0)
 	return handles
 
 
 def is_window_visible(hwnd):
+	"""Return True if the window's WS_VISIBLE style is set."""
 	return bool(_u32().IsWindowVisible(hwnd))
 
 
@@ -83,12 +86,19 @@ def window_title(hwnd):
 
 
 def window_pid(hwnd):
+	"""Return the process ID that owns hwnd."""
 	pid = wintypes.DWORD()
 	_u32().GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
 	return pid.value
 
 
 def move_window_offscreen(hwnd):
+	"""Slide hwnd to (-32000, -32000) without hiding or activating it.
+
+	SWP_NOACTIVATE is mandatory and the window must be moved, never hidden:
+	hiding or deactivating it would remove focus from the document and break
+	NVDA browse mode.
+	"""
 	_u32().SetWindowPos(
 		hwnd, 0, _OFFSCREEN_X, _OFFSCREEN_Y, 0, 0, _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE
 	)
@@ -120,7 +130,12 @@ def select_render_window(before, after, metadata, expected_title):
 
 	Returns the chosen handle, or None when the choice is ambiguous or nothing
 	new appeared (the caller then leaves the window visible as a safe fallback).
+
+	Single untitled candidate: returned (handles a window that opened before
+	setting its title). Multiple untitled candidates: None (ambiguous).
 	"""
+	# Re-filter against before even though collect_candidate_metadata already
+	# excludes them, so this rule is correct for any before/after/metadata input.
 	before_set = set(before)
 	candidates = [h for h in after if h not in before_set and h in metadata and metadata[h][0]]
 	titled = [h for h in candidates if metadata[h][1] == expected_title]
