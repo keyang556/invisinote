@@ -376,6 +376,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				os.getpid(),
 				deadline,
 			)
+			log.debug(f"invisinote: armed off-screen mover ({len(before)} windows before render)")
 		except Exception:
 			log.exception("invisinote: could not arm off-screen mover; render window will be visible")
 		ui.browseableMessage(html, title=title, isHtml=True)
