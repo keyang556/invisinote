@@ -334,6 +334,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if hwnd:
 				log.debug(f"invisinote: render window {hwnd} rect before move: {_window.window_rect(hwnd)}")
 				_window.move_window_offscreen(hwnd)
+				_window.hide_from_taskbar(hwnd)
 				log.debug(f"invisinote: render window {hwnd} rect after move: {_window.window_rect(hwnd)}")
 				return
 			if time.time() < deadline:

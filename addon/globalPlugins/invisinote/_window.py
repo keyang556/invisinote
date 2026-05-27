@@ -13,6 +13,9 @@ _SWP_NOZORDER = 0x0004
 _SWP_NOACTIVATE = 0x0010
 _OFFSCREEN_X = -32000
 _OFFSCREEN_Y = -32000
+_SWP_FRAMECHANGED = 0x0020
+_GWL_EXSTYLE = -20
+_WS_EX_TOOLWINDOW = 0x00000080
 
 _user32 = None
 _WNDENUMPROC = None
@@ -52,6 +55,10 @@ def _u32():
 	u.SetWindowPos.restype = wintypes.BOOL
 	u.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
 	u.GetWindowRect.restype = wintypes.BOOL
+	u.GetWindowLongPtrW.argtypes = (wintypes.HWND, ctypes.c_int)
+	u.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+	u.SetWindowLongPtrW.argtypes = (wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t)
+	u.SetWindowLongPtrW.restype = ctypes.c_ssize_t
 	_user32 = u
 	return _user32
 
@@ -104,6 +111,15 @@ def move_window_offscreen(hwnd):
 	_u32().SetWindowPos(
 		hwnd, 0, _OFFSCREEN_X, _OFFSCREEN_Y, 0, 0, _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE
 	)
+
+
+def hide_from_taskbar(hwnd):
+	"""Add WS_EX_TOOLWINDOW so the off-screen window drops its taskbar / Alt-Tab
+	entry. The SWP_FRAMECHANGED nudge makes the ex-style change take effect."""
+	u = _u32()
+	ex = u.GetWindowLongPtrW(hwnd, _GWL_EXSTYLE)
+	u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, ex | _WS_EX_TOOLWINDOW)
+	u.SetWindowPos(hwnd, 0, 0, 0, 0, 0, _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE | _SWP_FRAMECHANGED)
 
 
 def window_rect(hwnd):
