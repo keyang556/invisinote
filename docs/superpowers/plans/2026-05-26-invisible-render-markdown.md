@@ -429,8 +429,10 @@ This is a manual verification in live NVDA. **Do not proceed to Task 5 until row
 
 - [ ] **Step 1: Load the new build into NVDA**
 
-Either: run `scons`, install `invisinote-1.6.nvda-addon` via NVDA's Add-ons store ("Install from external source"), restart NVDA.
-Or (dev): copy `addon\globalPlugins\invisinote` into `%APPDATA%\nvda\scratchpad\globalPlugins\`, enable **Allow custom code (developer scratchpad)** in NVDA → Settings → Advanced, restart NVDA.
+First set NVDA log level to **Debug** (Settings → General) so the diagnostic lines used to verify row D are captured.
+
+Either: run `scons -c && scons` (plain `scons` can report "up to date" and skip a source change here, shipping a stale package), install `invisinote-1.6.nvda-addon` via NVDA's Add-ons store ("Install from external source"), restart NVDA.
+Or (dev): copy `addon\globalPlugins\invisinote` into `%APPDATA%\nvda\scratchpad\globalPlugins\`, enable **Allow custom code (developer scratchpad)** in NVDA → Settings → Advanced, restart NVDA. (The scratchpad route copies source directly, sidestepping the scons staleness.)
 
 - [ ] **Step 2: Stage and render**
 
@@ -440,16 +442,18 @@ Or (dev): copy `addon\globalPlugins\invisinote` into `%APPDATA%\nvda\scratchpad\
 
 - [ ] **Step 3: Verify the checklist and record findings**
 
-| Row | Check | Pass condition |
-|-----|-------|----------------|
-| A | Browse mode engages | NVDA announces the filename title then the document top; you're in browse mode |
-| B | Quick-nav works after the move | `h`/`1`-`6`/`k`/`l`/`i`/`t`/`x` and `NVDA+F7` all behave as in the pre-change verification |
-| C | Escape returns focus | `Escape` closes the doc; focus is back in Notepad and you can type |
-| D | Not visible | No window sits on screen; at most a brief flash as it opens then jumps off-screen |
-| E | Flash | Note whether a flash is perceptible and roughly how long |
-| F | Taskbar / Alt-Tab | Note whether a stray taskbar button or Alt-Tab entry for the hidden window lingers |
+Rows A, B, C, F are verifiable non-visually (audio / focus / log / Alt-Tab). Row D is verified by reading the NVDA log. Row E (flash) is visual and onlooker-only — not user-verifiable and does NOT gate.
 
-Record E and F results inline in this plan (they decide Task 4).
+| Row | Check | How to verify non-visually | Pass condition |
+|-----|-------|----------------------------|----------------|
+| A | Browse mode engages | Listen on render | Announces the filename title then the document top; browse mode active |
+| B | Quick-nav after the move | Press `h`/`1`-`6`/`k`/`l`/`i`/`t`/`x` and `NVDA+F7` | All behave as in the pre-change verification |
+| C | Escape returns focus | Press `Escape` | Doc closes; focus back in Notepad, you can type |
+| D | Off-screen (not visible) | Read the NVDA log (`NVDA+F1`) | An `invisinote: render window ... rect after move:` line shows coords near `(-32000, -32000, ...)` |
+| F | Taskbar / Alt-Tab | `Alt+Tab` through windows; navigate the taskbar | The render window does NOT appear in the switcher/taskbar (note if it does) |
+| E | Flash (visual, onlooker-only) | Not user-verifiable — skip | Informational only; does not gate. A sighted glance can confirm if ever needed |
+
+The log also emits a `rect before move:` line (an on-screen position); the before→after pair is the evidence the right window was found and relocated. Row F decides whether Task 4 is needed.
 
 **If it fails:**
 - Quick-nav dead / no announcement (A or B fails) → the window was moved but lost focus, or the wrong window was moved. Open the NVDA log viewer (`NVDA+F1`) and search for `invisinote:` messages (set NVDA log level to Debug to capture the timeout line). Confirm `move_window_offscreen` uses `SWP_NOACTIVATE` (it must not change activation). Temporarily raise `_RENDER_HIDE_DELAY_MS` to `100` in case the window wasn't created yet at the first attempt.
