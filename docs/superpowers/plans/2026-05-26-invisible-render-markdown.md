@@ -452,8 +452,20 @@ Or (dev): copy `addon\globalPlugins\invisinote` into `%APPDATA%\nvda\scratchpad\
 Record E and F results inline in this plan (they decide Task 4).
 
 **If it fails:**
-- Quick-nav dead / no announcement (A or B fails) → the window was moved but lost focus, or the wrong window was moved. Open the NVDA log viewer (`NVDA+F1`) and search for `invisinote:` messages. Confirm `move_window_offscreen` uses `SWP_NOACTIVATE` (it must not change activation). Temporarily raise `_RENDER_HIDE_DELAY_MS` to `100` in case the window wasn't created yet at the first attempt.
+- Quick-nav dead / no announcement (A or B fails) → the window was moved but lost focus, or the wrong window was moved. Open the NVDA log viewer (`NVDA+F1`) and search for `invisinote:` messages (set NVDA log level to Debug to capture the timeout line). Confirm `move_window_offscreen` uses `SWP_NOACTIVATE` (it must not change activation). Temporarily raise `_RENDER_HIDE_DELAY_MS` to `100` in case the window wasn't created yet at the first attempt.
 - Still fully visible (D fails) → the timer isn't firing inside the modal loop, or selection returned None. Check the log; verify `before`/`after` differ and a candidate matched the title (the title NVDA shows equals the filename you set).
+- **Move works but misbehaves** (e.g. on a multi-monitor desktop `-32000` lands on a real monitor, or a ghost lingers) → keep finding the window the same way, but instead of relocating it, make it transparent in place. This is the agreed fallback (chosen over rebuilding our own window). It keeps `WS_VISIBLE` so focus/browse mode survive, but renders nothing to onlookers. Replace the body of `move_window_offscreen` with a transparency call:
+
+  ```python
+  def make_window_transparent(hwnd):
+  	"""Keep hwnd visible/focusable but render it fully transparent."""
+  	u = _u32()
+  	ex = u.GetWindowLongPtrW(hwnd, _GWL_EXSTYLE)
+  	u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, ex | _WS_EX_LAYERED)
+  	u.SetLayeredWindowAttributes(hwnd, 0, 0, _LWA_ALPHA)
+  ```
+
+  Requires the `GetWindowLongPtrW`/`SetWindowLongPtrW` prototypes from Task 4 plus a `SetLayeredWindowAttributes` prototype (`argtypes=(HWND, wintypes.COLORREF, ctypes.c_byte, wintypes.DWORD)`), and constants `_WS_EX_LAYERED = 0x00080000`, `_LWA_ALPHA = 0x00000002` (reuse `_GWL_EXSTYLE = -20`). Note transparency does **not** remove the taskbar/Alt-Tab entry, so Task 4 may still apply on top. Like the move, it can't avoid the brief flash (applied post-creation).
 
 - [ ] **Step 4: Clean up test artifacts (optional)**
 
