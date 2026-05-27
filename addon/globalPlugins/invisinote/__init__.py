@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import time
 import ui
 import api
 import wx
@@ -14,11 +15,18 @@ import scriptHandler
 from scriptHandler import script
 from logHandler import log
 
+from . import _window
+
 # Make the vendored, pure-Python markdown library importable at runtime.
 # NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
 _VENDOR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_vendor")
 if _VENDOR_DIR not in sys.path:
 	sys.path.insert(0, _VENDOR_DIR)
+
+# Off-screen relocation timing for the markdown render window.
+_RENDER_HIDE_DELAY_MS = 30
+_RENDER_HIDE_RETRY_MS = 50
+_RENDER_HIDE_TIMEOUT_S = 1.0
 
 
 class SettingsDialog(wx.Dialog):
@@ -318,6 +326,31 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			log.exception("Markdown rendering failed")
 			return None
 
+	def _hide_render_window(self, before, expected_title, our_pid, deadline):
+		try:
+			after = _window.enum_top_level_windows()
+			metadata = _window.collect_candidate_metadata(after, before, our_pid)
+			hwnd = _window.select_render_window(before, after, metadata, expected_title)
+			if hwnd:
+				log.debug(f"invisinote: render window {hwnd} rect before move: {_window.window_rect(hwnd)}")
+				_window.move_window_offscreen(hwnd)
+				_window.hide_from_taskbar(hwnd)
+				log.debug(f"invisinote: render window {hwnd} rect after move: {_window.window_rect(hwnd)}")
+				return
+			if time.time() < deadline:
+				wx.CallLater(
+					_RENDER_HIDE_RETRY_MS,
+					self._hide_render_window,
+					before,
+					expected_title,
+					our_pid,
+					deadline,
+				)
+			else:
+				log.debugWarning("invisinote: timed out finding the render window; leaving it visible")
+		except Exception:
+			log.exception("invisinote: could not move render window off-screen; leaving it visible")
+
 	@script(description=_("Render note as markdown"))
 	def script_render_markdown(self, gesture):
 		content = self._get_current_note_content()
@@ -329,6 +362,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.message(_("Markdown rendering unavailable"))
 			return
 		title = os.path.basename(self.notes[self.currentNoteIndex])
+		# Snapshot windows, then arm a timer that finds the about-to-open
+		# browse-mode window and slides it off-screen. browseableMessage blocks
+		# in a modal loop until Escape on known NVDA builds; arming BEFORE the
+		# call is what lets the wx timer fire inside that loop.
+		try:
+			before = set(_window.enum_top_level_windows())
+			deadline = time.time() + _RENDER_HIDE_TIMEOUT_S
+			wx.CallLater(
+				_RENDER_HIDE_DELAY_MS,
+				self._hide_render_window,
+				before,
+				title,
+				os.getpid(),
+				deadline,
+			)
+			log.debug(f"invisinote: armed off-screen mover ({len(before)} windows before render)")
+		except Exception:
+			log.exception("invisinote: could not arm off-screen mover; render window will be visible")
 		ui.browseableMessage(html, title=title, isHtml=True)
 
 	@script(description=_("Read current note"))
