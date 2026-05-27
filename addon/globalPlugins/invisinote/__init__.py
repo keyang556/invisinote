@@ -332,7 +332,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			metadata = _window.collect_candidate_metadata(after, before, our_pid)
 			hwnd = _window.select_render_window(before, after, metadata, expected_title)
 			if hwnd:
+				log.debug(f"invisinote: render window {hwnd} rect before move: {_window.window_rect(hwnd)}")
 				_window.move_window_offscreen(hwnd)
+				log.debug(f"invisinote: render window {hwnd} rect after move: {_window.window_rect(hwnd)}")
 				return
 			if time.time() < deadline:
 				wx.CallLater(

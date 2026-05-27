@@ -50,6 +50,8 @@ def _u32():
 		wintypes.UINT,
 	)
 	u.SetWindowPos.restype = wintypes.BOOL
+	u.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
+	u.GetWindowRect.restype = wintypes.BOOL
 	_user32 = u
 	return _user32
 
@@ -102,6 +104,17 @@ def move_window_offscreen(hwnd):
 	_u32().SetWindowPos(
 		hwnd, 0, _OFFSCREEN_X, _OFFSCREEN_Y, 0, 0, _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE
 	)
+
+
+def window_rect(hwnd):
+	"""Return (left, top, right, bottom) screen coordinates of hwnd.
+
+	Diagnostic: lets the move be verified from the NVDA log without sight — an
+	off-screen window reads back as roughly (-32000, -32000, ...).
+	"""
+	rect = wintypes.RECT()
+	_u32().GetWindowRect(hwnd, ctypes.byref(rect))
+	return (rect.left, rect.top, rect.right, rect.bottom)
 
 
 def collect_candidate_metadata(handles, exclude, our_pid):
