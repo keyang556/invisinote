@@ -49,7 +49,7 @@ addon_info = {
 - NVDA+ALT+BACKSPACE: clear markers
 """),
 	# version
-	"addon_version": "1.6",
+	"addon_version": "1.7",
 	# Author(s)
 	"addon_author": "ClippyCat",
 	# URL for the add-on documentation support
