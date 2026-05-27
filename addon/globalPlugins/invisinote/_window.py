@@ -9,6 +9,7 @@ import ctypes
 from ctypes import wintypes
 
 _SWP_NOSIZE = 0x0001
+_SWP_NOMOVE = 0x0002
 _SWP_NOZORDER = 0x0004
 _SWP_NOACTIVATE = 0x0010
 _OFFSCREEN_X = -32000
@@ -115,11 +116,14 @@ def move_window_offscreen(hwnd):
 
 def hide_from_taskbar(hwnd):
 	"""Add WS_EX_TOOLWINDOW so the off-screen window drops its taskbar / Alt-Tab
-	entry. The SWP_FRAMECHANGED nudge makes the ex-style change take effect."""
+	entry, without dragging it back on-screen. SWP_FRAMECHANGED applies the
+	ex-style change; SWP_NOMOVE is essential — without it the (0, 0) below would
+	move the window back to the origin, undoing move_window_offscreen."""
 	u = _u32()
 	ex = u.GetWindowLongPtrW(hwnd, _GWL_EXSTYLE)
 	u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, ex | _WS_EX_TOOLWINDOW)
-	u.SetWindowPos(hwnd, 0, 0, 0, 0, 0, _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE | _SWP_FRAMECHANGED)
+	flags = _SWP_NOMOVE | _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE | _SWP_FRAMECHANGED
+	u.SetWindowPos(hwnd, 0, 0, 0, 0, 0, flags)
 
 
 def window_rect(hwnd):
