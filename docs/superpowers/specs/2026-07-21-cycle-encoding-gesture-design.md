@@ -1,121 +1,184 @@
-# Design: NVDA+ALT+E — cycle note encoding
+# Design: Cycle-encoding checklist + NVDA+ALT+E
 
 **Date:** 2026-07-21
 **Status:** Approved
 
 ## Goal
 
-Add a keyboard gesture, `NVDA+ALT+E`, that cycles the note encoding forward
-through the same list offered by the settings combo box, applying and announcing
-the change immediately — so a user can fix a garbled note without opening the
-Settings dialog.
+Replace the single-select "Note encoding" combo box with a checkable list where
+the user picks **which encodings to cycle between**, and add a gesture
+`NVDA+ALT+E` that cycles the active reading encoding forward through the checked
+ones, applying and announcing each change immediately.
 
-Builds on `2026-07-21-note-encoding-setting-design.md`.
+Supersedes the combo-box interaction from
+`2026-07-21-note-encoding-setting-design.md` (the combo is replaced) and the
+earlier full-list cycling idea previously drafted in this file.
 
 ## Decisions
 
-- **Gesture:** `NVDA+ALT+E` (currently unbound). Forward-cycling with wrap-around.
-- **Order:** the same six entries as the combo, in the same order: UTF-8 →
-  UTF-8 with BOM → Big5 → GB18030 → Windows-1252 → Latin-1 → (wrap) UTF-8.
-- **Apply timing:** persist to `encoding.txt` and re-read the current note
-  immediately (position resets to the note's start), matching the settings
-  dialog's reread-on-OK.
-- **Announcement:** `"Note encoding: <name>"`, e.g.
-  *"Note encoding: Big5 (Traditional Chinese)"*.
-- **Unknown stored value:** if `self.encoding` is not in the list (e.g. a
-  hand-edited `encoding.txt`), the first press selects the first entry (UTF-8).
+- **Control:** a `wx.CheckListBox` labelled **"Cycle encodings"**, replacing the
+  combo box, in the same position (last control, after File types). Default: all
+  six checked.
+- **Two pieces of state:**
+  - **Cycle set** — the checked encodings, persisted in a new
+    `cycle_encodings.txt`. Edited only via the checklist.
+  - **Active encoding** — the codec used by `_read_note_file`, persisted in
+    `encoding.txt`. Chosen only by cycling with `NVDA+ALT+E`.
+- **Invariant:** the active encoding is always a member of the (non-empty) cycle
+  set.
+- **Gesture:** `NVDA+ALT+E` cycles the active encoding forward through the
+  checked codecs in canonical order, wrapping; persists it, re-reads the current
+  note (position resets to its start), announces `"Note encoding: <name>"`.
+- **Edge cases:**
+  - Unchecking the currently-active encoding then pressing OK resets the active
+    to the first checked codec and re-reads the current note. Unchecking other
+    encodings leaves the active one and the reading position untouched.
+  - Checking none falls back to a cycle set of `["utf-8"]` (and the active
+    encoding becomes `utf-8`).
+- **Encoding list / order** (unchanged, six entries, no UTF-16): UTF-8 →
+  UTF-8 with BOM → Big5 (Traditional Chinese) → GB18030 (Simplified Chinese) →
+  Windows-1252 → Latin-1.
 
 ## User-facing behaviour (accessibility)
 
-- Pressing `NVDA+ALT+E` speaks *"Note encoding: <name>"* for the newly selected
-  encoding. Repeated presses cycle through all six, announcing each.
-- When the cycle reaches the encoding that matches the current note's on-disk
-  encoding, the note (re-read on each press) reads correctly. The reread resets
-  the reading position to the start of the current note and clears any selection.
-- No new visual UI; this is a gesture only. The gesture is reassignable via
-  NVDA's Input Gestures dialog (it carries the description "Cycle note
-  encoding").
+- **Panel:** tab order is Folders (list, Add, Remove) → File types (list, Add,
+  Remove) → **Cycle encodings**. The checklist announces
+  *"Cycle encodings, <encoding>, check box, checked/not checked, N of 6"*; arrow
+  keys move between rows, Space toggles.
+- **Gesture:** `NVDA+ALT+E` speaks *"Note encoding: <name>"* for the newly
+  selected encoding and re-reads the current note. Repeated presses cycle
+  through the checked encodings; if only one is checked it re-announces and
+  re-reads that one. Reassignable via NVDA's Input Gestures dialog
+  (description "Cycle note encoding").
 
 ## Implementation
 
 All changes in `addon/globalPlugins/invisinote/__init__.py`.
 
-### Shared encoding list
+### Shared helpers (module level)
 
-- Extract the encoding table to a module-level function `_note_encodings()`
-  returning a list of `(label, codec)` pairs in display/cycle order, with each
-  label wrapped in `_()` at call time (so translation reflects the current
-  language, as today):
+```python
+def _note_encodings():
+	return [
+		(_("UTF-8"), "utf-8"),
+		(_("UTF-8 with BOM"), "utf-8-sig"),
+		(_("Big5 (Traditional Chinese)"), "big5"),
+		(_("GB18030 (Simplified Chinese)"), "gb18030"),
+		(_("Windows-1252"), "cp1252"),
+		(_("Latin-1"), "latin-1"),
+	]
+
+
+def _encoding_label(codec):
+	for label, c in _note_encodings():
+		if c == codec:
+			return label
+	return codec
+```
+
+### Config state (`GlobalPlugin`)
+
+- `__init__`: keep `self.encoding` / `self.encodingFile` / `self._load_encoding()`.
+  Add `self.cycleEncodings = []`,
+  `self.cycleEncodingsFile = os.path.join(self.configFolder, "cycle_encodings.txt")`,
+  `self._load_cycle_encodings()`, then `self._clamp_active_encoding()`.
+- `_load_cycle_encodings(self)`: known = codecs from `_note_encodings()` in
+  canonical order. If the file exists, read the set of stored codec names and set
+  `self.cycleEncodings = [c for c in known if c in stored] or list(known)`.
+  Otherwise `self.cycleEncodings = list(known)` (all six).
+- `_clamp_active_encoding(self)`: if `self.encoding not in self.cycleEncodings`,
+  set `self.encoding = self.cycleEncodings[0] if self.cycleEncodings else "utf-8"`.
+- `_persist_encoding(self)`: write `self.encoding` to `encoding.txt`.
+- `_persist_cycle_encodings(self)`: write `self.cycleEncodings` (one codec per
+  line) to `cycle_encodings.txt`.
+
+### `apply_settings`
+
+Signature becomes `apply_settings(self, paths, file_types, cycle_encodings)`.
+After persisting paths and file types (unchanged):
+
+```python
+	self.cycleEncodings = list(cycle_encodings) or ["utf-8"]
+	self._persist_cycle_encodings()
+	previous = self.encoding
+	self._clamp_active_encoding()
+	if self.encoding != previous:
+		self._persist_encoding()
+		if self.notes:
+			self._load_current_note_lines()
+```
+
+### `_read_note_file`
+
+Unchanged from the note-encoding feature (reads with `self.encoding`, falls back
+to `latin-1` on `UnicodeDecodeError` / `LookupError`).
+
+### Panel (`InvisinoteSettingsPanel`)
+
+- `makeSettings`: replace the combo block with a checklist:
   ```python
-  def _note_encodings():
-  	return [
-  		(_("UTF-8"), "utf-8"),
-  		(_("UTF-8 with BOM"), "utf-8-sig"),
-  		(_("Big5 (Traditional Chinese)"), "big5"),
-  		(_("GB18030 (Simplified Chinese)"), "gb18030"),
-  		(_("Windows-1252"), "cp1252"),
-  		(_("Latin-1"), "latin-1"),
-  	]
+  encodings = _note_encodings()
+  labels = [e[0] for e in encodings]
+  self._encoding_codecs = [e[1] for e in encodings]
+  cycle_helper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+  self._cycle_list = cycle_helper.addLabeledControl(
+  	_("Cycle encodings"), wx.CheckListBox, choices=labels
+  )
+  enabled = plugin.cycleEncodings if plugin else self._encoding_codecs
+  for i, codec in enumerate(self._encoding_codecs):
+  	self._cycle_list.Check(i, codec in enabled)
   ```
-- `InvisinoteSettingsPanel.makeSettings` uses `encodings = _note_encodings()`
-  instead of the inline list. `labels` and `self._encoding_codecs` are derived
-  from it exactly as now.
-
-### Shared persistence helper
-
-- Extract the one-line `encoding.txt` write to `GlobalPlugin._persist_encoding`:
+- `onSave`: pass the checked codecs:
   ```python
-  def _persist_encoding(self):
-  	with open(self.encodingFile, "w", encoding="utf-8") as f:
-  		f.write(self.encoding + "\n")
+  checked = [self._encoding_codecs[i] for i in self._cycle_list.GetCheckedItems()]
+  self.plugin.apply_settings(self._paths, self._file_types, checked)
   ```
-- `apply_settings` calls `self._persist_encoding()` in place of its inline write
-  (behaviour unchanged).
 
 ### New script
 
 ```python
 @script(description=_("Cycle note encoding"))
 def script_cycle_encoding(self, gesture):
-	encodings = _note_encodings()
-	codecs = [e[1] for e in encodings]
-	idx = codecs.index(self.encoding) + 1 if self.encoding in codecs else 0
-	idx %= len(encodings)
-	label, codec = encodings[idx]
-	self.encoding = codec
+	cycle = self.cycleEncodings or ["utf-8"]
+	idx = cycle.index(self.encoding) + 1 if self.encoding in cycle else 0
+	idx %= len(cycle)
+	self.encoding = cycle[idx]
 	self._persist_encoding()
 	if self.notes:
 		self._load_current_note_lines()
-	ui.message(_("Note encoding: {}").format(label))
+	ui.message(_("Note encoding: {}").format(_encoding_label(self.encoding)))
 ```
 
 ### Gesture binding
 
-- Add to `__gestures`: `"kb:NVDA+ALT+E": "cycle_encoding"`.
+Add to `__gestures`: `"kb:NVDA+ALT+E": "cycle_encoding"`.
 
 ### Documentation
 
-- Add `- NVDA+ALT+E: cycle note encoding` to the gesture list in the root
-  `readme.md` and to `buildVars.py`'s `addon_description` (both are user-facing
-  surfaces; `addon/doc/en/` is gitignored build output regenerated from
-  `readme.md`).
+- Add `- NVDA+ALT+E: cycle note encoding` to the gesture list in root
+  `readme.md` and to `buildVars.py`'s `addon_description`.
 
 ## Out of scope
 
-- No reverse-cycle gesture (single forward key with wrap).
-- No change to the combo box, `_read_note_file`, or config formats.
+- No reverse-cycle gesture.
+- No direct "set active encoding" control (active is chosen only by cycling).
+- No change to `_read_note_file`, the render path, or the paths/filetypes config.
 
 ## Testing
 
 `__init__.py` imports NVDA runtime modules and cannot be unit-tested outside
-NVDA; the pytest suite only covers `_window`. Automated gates: `ruff check` /
-`ruff format --check`, `python -m pytest tests/`. Manual verification in live
-NVDA using the encoding-test folder:
+NVDA. Automated gates: `ruff check` / `ruff format --check`,
+`python -m pytest tests/`. Manual verification in live NVDA using the
+encoding-test folder:
 
-- On `big5.txt` (garbled under UTF-8), press `NVDA+ALT+E` and confirm each press
-  announces *"Note encoding: <name>"* through all six; on **Big5 (Traditional
-  Chinese)** the note reads correctly.
-- Confirm wrap-around returns to UTF-8 after Latin-1.
-- Confirm the chosen encoding persists (visible in the settings combo, and
-  across an NVDA restart via `encoding.txt`).
-- Confirm the settings combo still works unchanged (shared `_note_encodings`).
+- Panel: the "Cycle encodings" checklist is the last control, all six checked by
+  default, announces check state, Space toggles.
+- `NVDA+ALT+E` on `big5.txt`: each press announces *"Note encoding: <name>"*
+  through the checked encodings; on Big5 the note reads correctly; wrap-around
+  returns to the first checked after the last.
+- Uncheck all but UTF-8 and Big5, OK: `NVDA+ALT+E` now only alternates between
+  those two.
+- Cycle to Big5, reopen settings, uncheck Big5, OK: active resets to the first
+  checked encoding and the note re-reads.
+- Choices persist across an NVDA restart (`encoding.txt` +
+  `cycle_encodings.txt`).
