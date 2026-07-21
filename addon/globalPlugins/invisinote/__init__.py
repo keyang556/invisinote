@@ -5,7 +5,7 @@ import time
 import ui
 import api
 import wx
-import gui
+from gui import settingsDialogs
 import subprocess
 import globalVars
 import globalPluginHandler
@@ -29,12 +29,14 @@ _RENDER_HIDE_RETRY_MS = 50
 _RENDER_HIDE_TIMEOUT_S = 1.0
 
 
-class SettingsDialog(wx.Dialog):
-	def __init__(self, parent, paths, file_types):
-		super().__init__(parent, title=_("Invisinote settings"))
-		self._paths = list(paths)
-		self._file_types = list(file_types)
-		main_sizer = wx.BoxSizer(wx.VERTICAL)
+class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
+	title = _("Invisinote")
+	plugin = None
+
+	def makeSettings(self, settingsSizer):
+		plugin = self.plugin
+		self._paths = list(plugin.paths) if plugin else []
+		self._file_types = list(plugin.fileTypes) if plugin else []
 
 		paths_box = wx.StaticBoxSizer(wx.StaticBox(self, label=_("Folders")), wx.VERTICAL)
 		self._paths_listbox = wx.ListBox(self, choices=self._paths)
@@ -45,7 +47,7 @@ class SettingsDialog(wx.Dialog):
 		paths_btn_sizer.Add(add_folder_btn, flag=wx.RIGHT, border=5)
 		paths_btn_sizer.Add(remove_folder_btn)
 		paths_box.Add(paths_btn_sizer, flag=wx.ALL, border=5)
-		main_sizer.Add(paths_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+		settingsSizer.Add(paths_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
 
 		types_box = wx.StaticBoxSizer(wx.StaticBox(self, label=_("File types")), wx.VERTICAL)
 		self._types_listbox = wx.ListBox(self, choices=self._file_types)
@@ -56,11 +58,8 @@ class SettingsDialog(wx.Dialog):
 		types_btn_sizer.Add(add_type_btn, flag=wx.RIGHT, border=5)
 		types_btn_sizer.Add(remove_type_btn)
 		types_box.Add(types_btn_sizer, flag=wx.ALL, border=5)
-		main_sizer.Add(types_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+		settingsSizer.Add(types_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
 
-		main_sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), flag=wx.ALL, border=5)
-		self.SetSizer(main_sizer)
-		self.Fit()
 		add_folder_btn.Bind(wx.EVT_BUTTON, self._on_add_folder)
 		remove_folder_btn.Bind(wx.EVT_BUTTON, self._on_remove_folder)
 		add_type_btn.Bind(wx.EVT_BUTTON, self._on_add_type)
@@ -120,11 +119,9 @@ class SettingsDialog(wx.Dialog):
 					self._types_listbox.SetSelection(min(idx, len(self._file_types) - 1))
 			dlg.Destroy()
 
-	def get_paths(self):
-		return list(self._paths)
-
-	def get_file_types(self):
-		return list(self._file_types)
+	def onSave(self):
+		if self.plugin:
+			self.plugin.apply_settings(self._paths, self._file_types)
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -156,13 +153,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.fileTypesFile = os.path.join(self.configFolder, "filetypes.txt")
 		self._load_paths()
 		self._load_file_types()
-		self.prefsMenu = gui.mainFrame.sysTrayIcon.preferencesMenu
-		self.settingsMenuItem = self.prefsMenu.Append(
-			wx.ID_ANY,
-			_("Invisinote settings..."),
-			_("Configure Invisinote folders and file types"),
-		)
-		gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self.on_settings, self.settingsMenuItem)
+		InvisinoteSettingsPanel.plugin = self
+		settingsDialogs.NVDASettingsDialog.categoryClasses.append(InvisinoteSettingsPanel)
 
 	def _load_paths(self):
 		defaultPath = os.path.join(self.configFolder, "notes")
@@ -276,34 +268,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		subprocess.Popen(f'explorer "{self.notesPath}"', shell=True)
 		ui.message(_("Opened path"))
 
-	@script(description=_("Edit paths"))
-	def script_edit_paths(self, gesture):
-		wx.CallAfter(self._show_paths_dialog)
-
-	def _show_paths_dialog(self):
-		dlg = SettingsDialog(gui.mainFrame, self.paths, self.fileTypes)
-		if dlg.ShowModal() == wx.ID_OK:
-			self.paths = dlg.get_paths() or [os.path.join(self.configFolder, "notes")]
-			self.currentPathIndex = min(self.currentPathIndex, len(self.paths) - 1)
-			self.notesPath = self.paths[self.currentPathIndex]
-			with open(self.pathsFile, "w", encoding="utf-8") as f:
-				f.write("\n".join(self.paths) + "\n")
-			self.fileTypes = dlg.get_file_types() or ["txt"]
-			with open(self.fileTypesFile, "w", encoding="utf-8") as f:
-				f.write("\n".join(self.fileTypes) + "\n")
-		dlg.Destroy()
-
-	def on_settings(self, evt):
-		wx.CallAfter(self._show_paths_dialog)
+	def apply_settings(self, paths, file_types):
+		self.paths = list(paths) or [os.path.join(self.configFolder, "notes")]
+		self.currentPathIndex = min(self.currentPathIndex, len(self.paths) - 1)
+		self.notesPath = self.paths[self.currentPathIndex]
+		with open(self.pathsFile, "w", encoding="utf-8") as f:
+			f.write("\n".join(self.paths) + "\n")
+		self.fileTypes = list(file_types) or ["txt"]
+		with open(self.fileTypesFile, "w", encoding="utf-8") as f:
+			f.write("\n".join(self.fileTypes) + "\n")
 
 	def terminate(self):
 		try:
-			gui.mainFrame.sysTrayIcon.Unbind(
-				wx.EVT_MENU, source=self.settingsMenuItem, handler=self.on_settings
-			)
-			self.prefsMenu.Delete(self.settingsMenuItem)
-		except (AttributeError, RuntimeError):
+			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(InvisinoteSettingsPanel)
+		except (ValueError, AttributeError):
 			pass
+		InvisinoteSettingsPanel.plugin = None
 		super().terminate()
 
 	@script(description=_("Move to previous folder"))
@@ -574,7 +554,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	__gestures = {
 		"kb:NVDA+ALT+P": "open_path",
-		"kb:NVDA+ALT+SHIFT+P": "edit_paths",
 		"kb:NVDA+ALT+[": "previous_folder",
 		"kb:NVDA+ALT+]": "next_folder",
 		"kb:NVDA+ALT+N": "load_notes",
