@@ -29,6 +29,24 @@ _RENDER_HIDE_RETRY_MS = 50
 _RENDER_HIDE_TIMEOUT_S = 1.0
 
 
+def _note_encodings():
+	return [
+		(_("UTF-8"), "utf-8"),
+		(_("UTF-8 with BOM"), "utf-8-sig"),
+		(_("Big5 (Traditional Chinese)"), "big5"),
+		(_("GB18030 (Simplified Chinese)"), "gb18030"),
+		(_("Windows-1252"), "cp1252"),
+		(_("Latin-1"), "latin-1"),
+	]
+
+
+def _encoding_label(codec):
+	for label, c in _note_encodings():
+		if c == codec:
+			return label
+	return codec
+
+
 class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 	title = _("Invisinote")
 	plugin = None
@@ -65,22 +83,16 @@ class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 		add_type_btn.Bind(wx.EVT_BUTTON, self._on_add_type)
 		remove_type_btn.Bind(wx.EVT_BUTTON, self._on_remove_type)
 
-		encodings = [
-			(_("UTF-8"), "utf-8"),
-			(_("UTF-8 with BOM"), "utf-8-sig"),
-			(_("Big5 (Traditional Chinese)"), "big5"),
-			(_("GB18030 (Simplified Chinese)"), "gb18030"),
-			(_("Windows-1252"), "cp1252"),
-			(_("Latin-1"), "latin-1"),
-		]
+		encodings = _note_encodings()
 		labels = [e[0] for e in encodings]
 		self._encoding_codecs = [e[1] for e in encodings]
-		enc_helper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
-		self._encoding_choice = enc_helper.addLabeledControl(_("Note encoding"), wx.Choice, choices=labels)
-		current = plugin.encoding if plugin else "utf-8"
-		self._encoding_choice.SetSelection(
-			self._encoding_codecs.index(current) if current in self._encoding_codecs else 0
+		cycle_helper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+		self._cycle_list = cycle_helper.addLabeledControl(
+			_("Cycle encodings"), wx.CheckListBox, choices=labels
 		)
+		enabled = plugin.cycleEncodings if plugin else self._encoding_codecs
+		for i, codec in enumerate(self._encoding_codecs):
+			self._cycle_list.Check(i, codec in enabled)
 
 	def _on_add_folder(self, event):
 		dlg = wx.DirDialog(self, _("Choose a folder"))
@@ -138,11 +150,8 @@ class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 
 	def onSave(self):
 		if self.plugin:
-			self.plugin.apply_settings(
-				self._paths,
-				self._file_types,
-				self._encoding_codecs[self._encoding_choice.GetSelection()],
-			)
+			checked = [self._encoding_codecs[i] for i in self._cycle_list.GetCheckedItems()]
+			self.plugin.apply_settings(self._paths, self._file_types, checked)
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -177,6 +186,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.encoding = "utf-8"
 		self.encodingFile = os.path.join(self.configFolder, "encoding.txt")
 		self._load_encoding()
+		self.cycleEncodings = []
+		self.cycleEncodingsFile = os.path.join(self.configFolder, "cycle_encodings.txt")
+		self._load_cycle_encodings()
+		self._clamp_active_encoding()
 		InvisinoteSettingsPanel.plugin = self
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(InvisinoteSettingsPanel)
 
@@ -209,6 +222,27 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				value = f.read().strip()
 			if value:
 				self.encoding = value
+
+	def _load_cycle_encodings(self):
+		known = [e[1] for e in _note_encodings()]
+		if os.path.exists(self.cycleEncodingsFile):
+			with open(self.cycleEncodingsFile, "r", encoding="utf-8") as f:
+				stored = {line.strip() for line in f if line.strip()}
+			self.cycleEncodings = [c for c in known if c in stored] or list(known)
+		else:
+			self.cycleEncodings = list(known)
+
+	def _clamp_active_encoding(self):
+		if self.encoding not in self.cycleEncodings:
+			self.encoding = self.cycleEncodings[0] if self.cycleEncodings else "utf-8"
+
+	def _persist_encoding(self):
+		with open(self.encodingFile, "w", encoding="utf-8") as f:
+			f.write(self.encoding + "\n")
+
+	def _persist_cycle_encodings(self):
+		with open(self.cycleEncodingsFile, "w", encoding="utf-8") as f:
+			f.write("\n".join(self.cycleEncodings) + "\n")
 
 	def _read_note_file(self, path):
 		try:
@@ -299,7 +333,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		subprocess.Popen(f'explorer "{self.notesPath}"', shell=True)
 		ui.message(_("Opened path"))
 
-	def apply_settings(self, paths, file_types, encoding):
+	def apply_settings(self, paths, file_types, cycle_encodings):
 		self.paths = list(paths) or [os.path.join(self.configFolder, "notes")]
 		self.currentPathIndex = min(self.currentPathIndex, len(self.paths) - 1)
 		self.notesPath = self.paths[self.currentPathIndex]
@@ -308,12 +342,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.fileTypes = list(file_types) or ["txt"]
 		with open(self.fileTypesFile, "w", encoding="utf-8") as f:
 			f.write("\n".join(self.fileTypes) + "\n")
-		encoding_changed = encoding != self.encoding
-		self.encoding = encoding or "utf-8"
-		with open(self.encodingFile, "w", encoding="utf-8") as f:
-			f.write(self.encoding + "\n")
-		if encoding_changed and self.notes:
-			self._load_current_note_lines()
+		self.cycleEncodings = list(cycle_encodings) or ["utf-8"]
+		self._persist_cycle_encodings()
+		previous = self.encoding
+		self._clamp_active_encoding()
+		if self.encoding != previous:
+			self._persist_encoding()
+			if self.notes:
+				self._load_current_note_lines()
 
 	def terminate(self):
 		try:
@@ -589,8 +625,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.selectionEnd = None
 		ui.message(_("selection cleared"))
 
+	@script(description=_("Cycle note encoding"))
+	def script_cycle_encoding(self, gesture):
+		cycle = self.cycleEncodings or ["utf-8"]
+		idx = cycle.index(self.encoding) + 1 if self.encoding in cycle else 0
+		idx %= len(cycle)
+		self.encoding = cycle[idx]
+		self._persist_encoding()
+		if self.notes:
+			self._load_current_note_lines()
+		ui.message(_("Note encoding: {}").format(_encoding_label(self.encoding)))
+
 	__gestures = {
 		"kb:NVDA+ALT+P": "open_path",
+		"kb:NVDA+ALT+E": "cycle_encoding",
 		"kb:NVDA+ALT+[": "previous_folder",
 		"kb:NVDA+ALT+]": "next_folder",
 		"kb:NVDA+ALT+N": "load_notes",
