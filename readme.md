@@ -4,7 +4,7 @@ My first dip into the NVDA addon rabbit hole.
 Virtually browse notes from configured folders with the following gestures:
 
 - NVDA+ALT+P: open path
-- NVDA+ALT+SHIFT+P: open settings
+- NVDA+ALT+SHIFT+P: open settings (also available from the NVDA menu under Preferences > Invisinote settings)
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
 - NVDA+ALT+N: load notes
