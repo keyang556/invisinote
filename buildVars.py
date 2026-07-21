@@ -26,7 +26,6 @@ addon_info = {
 	"addon_description": _("""Browse notes virtually from configured folders.
 
 - NVDA+ALT+P: open path
-- NVDA+ALT+SHIFT+P: open settings
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
 - NVDA+ALT+N: load notes
@@ -47,6 +46,8 @@ addon_info = {
 - NVDA+ALT+F9: set selection start
 - NVDA+ALT+F10: set selection end, twice to copy
 - NVDA+ALT+BACKSPACE: clear markers
+
+Settings are configured in NVDA's Settings dialog (NVDA+CTRL+S) under the Invisinote category.
 """),
 	# version
 	"addon_version": "1.7",
