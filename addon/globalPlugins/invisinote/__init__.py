@@ -625,20 +625,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.selectionEnd = None
 		ui.message(_("selection cleared"))
 
-	@script(description=_("Cycle note encoding"))
-	def script_cycle_encoding(self, gesture):
+	def _cycle_encoding(self, step):
 		cycle = self.cycleEncodings or ["utf-8"]
-		idx = cycle.index(self.encoding) + 1 if self.encoding in cycle else 0
-		idx %= len(cycle)
+		if self.encoding in cycle:
+			idx = (cycle.index(self.encoding) + step) % len(cycle)
+		else:
+			idx = 0
 		self.encoding = cycle[idx]
 		self._persist_encoding()
 		if self.notes:
 			self._load_current_note_lines()
-		ui.message(_("Note encoding: {}").format(_encoding_label(self.encoding)))
+		ui.message(_encoding_label(self.encoding))
+
+	@script(description=_("Cycle note encoding"))
+	def script_cycle_encoding(self, gesture):
+		self._cycle_encoding(1)
+
+	@script(description=_("Cycle note encoding backwards"))
+	def script_cycle_encoding_back(self, gesture):
+		self._cycle_encoding(-1)
 
 	__gestures = {
 		"kb:NVDA+ALT+P": "open_path",
 		"kb:NVDA+ALT+E": "cycle_encoding",
+		"kb:NVDA+ALT+SHIFT+E": "cycle_encoding_back",
 		"kb:NVDA+ALT+[": "previous_folder",
 		"kb:NVDA+ALT+]": "next_folder",
 		"kb:NVDA+ALT+N": "load_notes",

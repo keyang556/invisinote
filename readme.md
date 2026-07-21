@@ -5,6 +5,7 @@ Virtually browse notes from configured folders with the following gestures:
 
 - NVDA+ALT+P: open path
 - NVDA+ALT+E: cycle note encoding
+- NVDA+ALT+SHIFT+E: cycle note encoding backwards
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
 - NVDA+ALT+N: load notes
