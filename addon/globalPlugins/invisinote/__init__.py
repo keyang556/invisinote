@@ -5,7 +5,7 @@ import time
 import ui
 import api
 import wx
-from gui import settingsDialogs
+from gui import guiHelper, settingsDialogs
 import subprocess
 import globalVars
 import globalPluginHandler
@@ -65,6 +65,23 @@ class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 		add_type_btn.Bind(wx.EVT_BUTTON, self._on_add_type)
 		remove_type_btn.Bind(wx.EVT_BUTTON, self._on_remove_type)
 
+		encodings = [
+			(_("UTF-8"), "utf-8"),
+			(_("UTF-8 with BOM"), "utf-8-sig"),
+			(_("Big5 (Traditional Chinese)"), "big5"),
+			(_("GB18030 (Simplified Chinese)"), "gb18030"),
+			(_("Windows-1252"), "cp1252"),
+			(_("Latin-1"), "latin-1"),
+		]
+		labels = [e[0] for e in encodings]
+		self._encoding_codecs = [e[1] for e in encodings]
+		enc_helper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+		self._encoding_choice = enc_helper.addLabeledControl(_("Note encoding"), wx.Choice, choices=labels)
+		current = plugin.encoding if plugin else "utf-8"
+		self._encoding_choice.SetSelection(
+			self._encoding_codecs.index(current) if current in self._encoding_codecs else 0
+		)
+
 	def _on_add_folder(self, event):
 		dlg = wx.DirDialog(self, _("Choose a folder"))
 		if dlg.ShowModal() == wx.ID_OK:
@@ -121,7 +138,11 @@ class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 
 	def onSave(self):
 		if self.plugin:
-			self.plugin.apply_settings(self._paths, self._file_types)
+			self.plugin.apply_settings(
+				self._paths,
+				self._file_types,
+				self._encoding_codecs[self._encoding_choice.GetSelection()],
+			)
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -153,6 +174,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.fileTypesFile = os.path.join(self.configFolder, "filetypes.txt")
 		self._load_paths()
 		self._load_file_types()
+		self.encoding = "utf-8"
+		self.encodingFile = os.path.join(self.configFolder, "encoding.txt")
+		self._load_encoding()
 		InvisinoteSettingsPanel.plugin = self
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(InvisinoteSettingsPanel)
 
@@ -179,11 +203,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.fileTypes:
 			self.fileTypes = ["txt"]
 
+	def _load_encoding(self):
+		if os.path.exists(self.encodingFile):
+			with open(self.encodingFile, "r", encoding="utf-8") as f:
+				value = f.read().strip()
+			if value:
+				self.encoding = value
+
 	def _read_note_file(self, path):
 		try:
-			with open(path, "r", encoding="utf-8") as f:
+			with open(path, "r", encoding=self.encoding) as f:
 				return f.read()
-		except UnicodeDecodeError:
+		except (UnicodeDecodeError, LookupError):
 			with open(path, "r", encoding="latin-1") as f:
 				return f.read()
 
@@ -268,7 +299,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		subprocess.Popen(f'explorer "{self.notesPath}"', shell=True)
 		ui.message(_("Opened path"))
 
-	def apply_settings(self, paths, file_types):
+	def apply_settings(self, paths, file_types, encoding):
 		self.paths = list(paths) or [os.path.join(self.configFolder, "notes")]
 		self.currentPathIndex = min(self.currentPathIndex, len(self.paths) - 1)
 		self.notesPath = self.paths[self.currentPathIndex]
@@ -277,6 +308,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.fileTypes = list(file_types) or ["txt"]
 		with open(self.fileTypesFile, "w", encoding="utf-8") as f:
 			f.write("\n".join(self.fileTypes) + "\n")
+		encoding_changed = encoding != self.encoding
+		self.encoding = encoding or "utf-8"
+		with open(self.encodingFile, "w", encoding="utf-8") as f:
+			f.write(self.encoding + "\n")
+		if encoding_changed and self.notes:
+			self._load_current_note_lines()
 
 	def terminate(self):
 		try:
