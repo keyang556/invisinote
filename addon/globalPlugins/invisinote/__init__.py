@@ -298,7 +298,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def terminate(self):
 		try:
-			self.prefsMenu.Remove(self.settingsMenuItem)
+			gui.mainFrame.sysTrayIcon.Unbind(
+				wx.EVT_MENU, source=self.settingsMenuItem, handler=self.on_settings
+			)
+			self.prefsMenu.Delete(self.settingsMenuItem)
 		except (AttributeError, RuntimeError):
 			pass
 		super().terminate()
