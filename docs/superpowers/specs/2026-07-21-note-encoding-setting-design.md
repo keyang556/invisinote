@@ -31,11 +31,16 @@ correctly. A user-selectable primary encoding fixes this.
   |---|---|
   | UTF-8 | `utf-8` |
   | UTF-8 with BOM | `utf-8-sig` |
-  | UTF-16 | `utf-16` |
   | Big5 (Traditional Chinese) | `big5` |
   | GB18030 (Simplified Chinese) | `gb18030` |
   | Windows-1252 | `cp1252` |
   | Latin-1 | `latin-1` |
+
+  UTF-16 was deliberately excluded: no language requires it (UTF-8 covers all
+  Unicode), it's the only non-ASCII-compatible option so picking it would garble
+  plain English/ASCII notes, and UTF-8-with-BOM already covers BOM'd files from
+  Windows editors. Every entry in the list above is ASCII-compatible, so English
+  text reads correctly under any choice.
 - **Apply timing:** on **OK/Apply**, if the encoding changed, re-read the
   currently open note immediately with the new encoding (position resets to the
   start of that note; selection cleared). Subsequent note loads use the new
@@ -47,7 +52,7 @@ correctly. A user-selectable primary encoding fixes this.
 
 - Entering the Invisinote category and tabbing to the end reaches **Note
   encoding**, announced as *"Note encoding, combo box, <current value>"* (e.g.
-  "UTF-8"). Arrowing moves through the seven entries, each announced.
+  "UTF-8"). Arrowing moves through the six entries, each announced.
 - After changing it and pressing OK: if the encoding changed, the current note
   is re-decoded and reading resumes from that note's first line. (No live-region
   announcement is added; navigating/reading the note surfaces the corrected
