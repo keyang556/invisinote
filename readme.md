@@ -4,6 +4,7 @@ My first dip into the NVDA addon rabbit hole.
 Virtually browse notes from configured folders with the following gestures:
 
 - NVDA+ALT+P: open path
+- NVDA+ALT+E: cycle note encoding
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
 - NVDA+ALT+N: load notes

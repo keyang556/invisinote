@@ -26,6 +26,7 @@ addon_info = {
 	"addon_description": _("""Browse notes virtually from configured folders.
 
 - NVDA+ALT+P: open path
+- NVDA+ALT+E: cycle note encoding
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
 - NVDA+ALT+N: load notes
