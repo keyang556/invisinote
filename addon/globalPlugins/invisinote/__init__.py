@@ -156,6 +156,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.fileTypesFile = os.path.join(self.configFolder, "filetypes.txt")
 		self._load_paths()
 		self._load_file_types()
+		self.prefsMenu = gui.mainFrame.sysTrayIcon.preferencesMenu
+		self.settingsMenuItem = self.prefsMenu.Append(
+			wx.ID_ANY,
+			_("Invisinote settings..."),
+			_("Configure Invisinote folders and file types"),
+		)
+		gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self.on_settings, self.settingsMenuItem)
 
 	def _load_paths(self):
 		defaultPath = os.path.join(self.configFolder, "notes")
@@ -285,6 +292,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			with open(self.fileTypesFile, "w", encoding="utf-8") as f:
 				f.write("\n".join(self.fileTypes) + "\n")
 		dlg.Destroy()
+
+	def on_settings(self, evt):
+		wx.CallAfter(self._show_paths_dialog)
+
+	def terminate(self):
+		try:
+			gui.mainFrame.sysTrayIcon.Unbind(
+				wx.EVT_MENU, source=self.settingsMenuItem, handler=self.on_settings
+			)
+			self.prefsMenu.Delete(self.settingsMenuItem)
+		except (AttributeError, RuntimeError):
+			pass
+		super().terminate()
 
 	@script(description=_("Move to previous folder"))
 	def script_previous_folder(self, gesture):
