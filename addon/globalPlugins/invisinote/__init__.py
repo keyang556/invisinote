@@ -13,10 +13,16 @@ import globalPluginHandler
 import characterProcessing
 import languageHandler
 import scriptHandler
+import addonHandler
 from scriptHandler import script
 from logHandler import log
 
 from . import _window
+
+# Bind `_` (and the other gettext builtins) to this add-on's own catalog.
+# Without this, `_` resolves to NVDA's core catalog, which does not contain our
+# strings, so every message falls back to English even when a translation exists.
+addonHandler.initTranslation()
 
 # Make the vendored, pure-Python markdown library importable at runtime.
 # NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
