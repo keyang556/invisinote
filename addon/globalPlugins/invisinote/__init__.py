@@ -5,6 +5,7 @@ import time
 import ui
 import api
 import wx
+import gui
 from gui import guiHelper, nvdaControls, settingsDialogs
 import subprocess
 import globalVars
@@ -12,10 +13,16 @@ import globalPluginHandler
 import characterProcessing
 import languageHandler
 import scriptHandler
+import addonHandler
 from scriptHandler import script
 from logHandler import log
 
 from . import _window
+
+# Bind `_` (and the other gettext builtins) to this add-on's own catalog.
+# Without this, `_` resolves to NVDA's core catalog, which does not contain our
+# strings, so every message falls back to English even when a translation exists.
+addonHandler.initTranslation()
 
 # Make the vendored, pure-Python markdown library importable at runtime.
 # NVDA's bundled interpreter does not ship markdown, so it travels with the add-on.
@@ -332,6 +339,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_open_path(self, gesture):
 		subprocess.Popen(f'explorer "{self.notesPath}"', shell=True)
 		ui.message(_("Opened path"))
+
+	@script(description=_("Open Invisinote settings"))
+	def script_open_settings(self, gesture):
+		# Opens NVDA's Settings dialog focused on our own category.
+		# Intentionally unassigned: users bind their own gesture via Input Gestures.
+		wx.CallAfter(
+			gui.mainFrame.popupSettingsDialog,
+			settingsDialogs.NVDASettingsDialog,
+			InvisinoteSettingsPanel,
+		)
 
 	def apply_settings(self, paths, file_types, cycle_encodings):
 		self.paths = list(paths) or [os.path.join(self.configFolder, "notes")]
