@@ -23,16 +23,18 @@ addon_info = {
 	"addon_summary": _("invisinote"),
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
-	"addon_description": _("""Browse notes virtually from configured folders.
+	"addon_description": _("""Invisinote is an NVDA add-on for reading plain-text notes without leaving the application you are working in. No window opens and focus never moves: the notes are loaded into memory and you browse them entirely with keyboard gestures, while the app you are in keeps the focus.
 
-- NVDA+ALT+P: open path
-- NVDA+ALT+E: cycle note encoding
-- NVDA+ALT+SHIFT+E: cycle note encoding backwards
+Folders and notes:
+- NVDA+ALT+P: open the current folder in File Explorer
 - NVDA+ALT+[: previous folder
 - NVDA+ALT+]: next folder
-- NVDA+ALT+N: load notes
+- NVDA+ALT+N: load the notes in the current folder
 - NVDA+ALT+U: previous note
 - NVDA+ALT+O: next note
+
+Reading:
+- NVDA+ALT+SHIFT+A: read the whole note
 - NVDA+ALT+I: previous line
 - NVDA+ALT+K: next line
 - NVDA+ALT+J: previous word
@@ -41,15 +43,20 @@ addon_info = {
 - NVDA+ALT+.: next character
 - NVDA+ALT+H: start of line
 - NVDA+ALT+': end of line
-- NVDA+ALT+SHIFT+A: read note
-- NVDA+ALT+Space: render note as markdown
-- NVDA+ALT+A: copy note
-- NVDA+ALT+;: copy line
-- NVDA+ALT+F9: set selection start
-- NVDA+ALT+F10: set selection end, twice to copy
-- NVDA+ALT+BACKSPACE: clear markers
+- NVDA+ALT+Space: render the note as Markdown and read it in a browse-mode window
 
-Settings are configured in NVDA's Settings dialog (NVDA+CTRL+S) under the Invisinote category.
+Copying:
+- NVDA+ALT+A: copy the whole note
+- NVDA+ALT+;: copy the current line
+- NVDA+ALT+F9: set the selection start at the current position
+- NVDA+ALT+F10: set the selection end; press twice to copy the selection
+- NVDA+ALT+BACKSPACE: clear the selection markers
+
+Encoding:
+- NVDA+ALT+E: switch to the next note encoding
+- NVDA+ALT+SHIFT+E: switch to the previous note encoding
+
+Settings live in NVDA's Settings dialog (NVDA+CTRL+S) under the Invisinote category. An Open Invisinote settings command that jumps straight to that category is available in NVDA's Input Gestures dialog, under the invisinote category, if you would like to assign a shortcut of your own.
 """),
 	# version
 	"addon_version": "1.7",
