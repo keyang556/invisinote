@@ -41,7 +41,7 @@ Code style: tabs for indentation, max line length 110. The `_`, `ngettext`, `pge
 The entire add-on logic lives in a single file: `addon/globalPlugins/invisinote/__init__.py`.
 
 - **`GlobalPlugin`** — the NVDA global plugin class. Maintains all navigation state (current folder, note index, line/word/char position, selection anchor) as instance variables. Loads paths from `addon/globalPlugins/paths.txt` and file types from `addon/globalPlugins/filetypes.txt` at startup.
-- **`InvisinoteSettingsPanel`** — a `gui.settingsDialogs.SettingsPanel` for configuring watched folders and file extensions, registered as a category in NVDA's Settings dialog (NVDA+CTRL+S → Invisinote). Registered in `GlobalPlugin.__init__` and deregistered in `terminate`.
+- **`InvisinoteSettingsPanel`** — a `gui.settingsDialogs.SettingsPanel` for configuring watched folders and file extensions, registered as a category in NVDA's Settings dialog (NVDA+CTRL+S → Invisinote). Registered in `GlobalPlugin.__init__` and deregistered in `terminate`. `script_open_settings` (NVDA+ALT+SHIFT+P) opens that category directly via `gui.mainFrame.popupSettingsDialog`.
 - Scripts are plain methods prefixed `script_` and decorated with `@script(description=_(...))`. They are bound to gestures in the `__gestures` dict at the bottom of the class.
 - Navigation state reset rules: moving to a new note resets all sub-note state; moving lines resets char/word index; selection anchor is cleared on any non-selection movement.
 
