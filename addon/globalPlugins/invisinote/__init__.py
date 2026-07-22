@@ -5,6 +5,7 @@ import time
 import ui
 import api
 import wx
+import gui
 from gui import guiHelper, nvdaControls, settingsDialogs
 import subprocess
 import globalVars
@@ -333,6 +334,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		subprocess.Popen(f'explorer "{self.notesPath}"', shell=True)
 		ui.message(_("Opened path"))
 
+	@script(description=_("Open Invisinote settings"))
+	def script_open_settings(self, gesture):
+		# Opens NVDA's Settings dialog focused on our own category.
+		wx.CallAfter(
+			gui.mainFrame.popupSettingsDialog,
+			settingsDialogs.NVDASettingsDialog,
+			InvisinoteSettingsPanel,
+		)
+
 	def apply_settings(self, paths, file_types, cycle_encodings):
 		self.paths = list(paths) or [os.path.join(self.configFolder, "notes")]
 		self.currentPathIndex = min(self.currentPathIndex, len(self.paths) - 1)
@@ -647,6 +657,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	__gestures = {
 		"kb:NVDA+ALT+P": "open_path",
+		"kb:NVDA+ALT+SHIFT+P": "open_settings",
 		"kb:NVDA+ALT+E": "cycle_encoding",
 		"kb:NVDA+ALT+SHIFT+E": "cycle_encoding_back",
 		"kb:NVDA+ALT+[": "previous_folder",
