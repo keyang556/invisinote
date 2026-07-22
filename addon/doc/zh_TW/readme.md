@@ -76,7 +76,7 @@ Windows-1252 與 Latin-1。若筆記無法以目前編碼解碼，會改以 Lati
 
 Invisinote 是開放原始碼的 NVDA 附加元件，採用 GNU GPL v2 授權。
 
-* 原始儲存庫：<https://github.com/ClippyCat/invisinote>
+* 儲存庫：<https://github.com/ClippyCat/invisinote>
 * 作者：ClippyCat
 * 問題回報與功能建議：<https://github.com/ClippyCat/invisinote/issues>
 
