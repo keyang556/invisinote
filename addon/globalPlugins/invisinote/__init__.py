@@ -5,7 +5,7 @@ import time
 import ui
 import api
 import wx
-from gui import guiHelper, settingsDialogs
+from gui import guiHelper, nvdaControls, settingsDialogs
 import subprocess
 import globalVars
 import globalPluginHandler
@@ -88,7 +88,7 @@ class InvisinoteSettingsPanel(settingsDialogs.SettingsPanel):
 		self._encoding_codecs = [e[1] for e in encodings]
 		cycle_helper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
 		self._cycle_list = cycle_helper.addLabeledControl(
-			_("Cycle encodings"), wx.CheckListBox, choices=labels
+			_("Cycle encodings"), nvdaControls.CustomCheckListBox, choices=labels
 		)
 		enabled = plugin.cycleEncodings if plugin else self._encoding_codecs
 		for i, codec in enumerate(self._encoding_codecs):
