@@ -7,7 +7,7 @@ while the app you are in keeps the focus.
 
 ## Getting started
 
-1. Open NVDA's Settings dialog (NVDA+CTRL+S) and choose the **Invisinote**
+1. Open NVDA's Settings dialog and choose the **Invisinote**
    category, or press NVDA+ALT+SHIFT+P from anywhere.
 2. Add one or more folders that contain your notes, and the file extensions to
    read (`txt` by default).
@@ -64,7 +64,7 @@ selection command clears the selection markers.
 
 ## Settings
 
-Settings live in NVDA's Settings dialog (NVDA+CTRL+S) under the **Invisinote**
+Settings live in NVDA's Settings dialog under the **Invisinote**
 category, and NVDA+ALT+SHIFT+P opens that category directly.
 
 * **Folders** — the folders Invisinote reads notes from. Move between them with
@@ -83,7 +83,7 @@ fails outright.
 
 Invisinote is an open-source NVDA add-on, licensed under the GNU GPL v2.
 
-* Original repository: <https://github.com/ClippyCat/invisinote>
+* Repository: <https://github.com/ClippyCat/invisinote>
 * Author: ClippyCat
 * Issues and feature requests: <https://github.com/ClippyCat/invisinote/issues>
 
