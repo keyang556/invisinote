@@ -6,8 +6,7 @@ Invisinote 是一個 NVDA 附加元件，讓您不必離開目前正在使用的
 
 ## 開始使用
 
-1. 開啟 NVDA 設定對話框，並選擇 **Invisinote** 類別，
-   或在任何地方按下 NVDA+ALT+SHIFT+P。
+1. 開啟 NVDA 設定對話框（NVDA+CTRL+S），並選擇 **Invisinote** 類別。
 2. 新增一個或多個存放筆記的資料夾，以及要讀取的副檔名（預設為 `txt`）。
 3. 按下 NVDA+ALT+N 載入目前資料夾中的筆記，NVDA 會報出找到幾則筆記。
 4. 以 NVDA+ALT+U 和 NVDA+ALT+O 在筆記之間移動，再用下列手勢逐行、逐字詞
@@ -19,7 +18,6 @@ Invisinote 是一個 NVDA 附加元件，讓您不必離開目前正在使用的
 
 ### 資料夾與筆記
 
-* NVDA+ALT+SHIFT+P：開啟 Invisinote 設定
 * NVDA+ALT+P：在檔案總管中開啟目前資料夾
 * NVDA+ALT+\[：上一個資料夾
 * NVDA+ALT+]：下一個資料夾
@@ -58,8 +56,9 @@ Invisinote 是一個 NVDA 附加元件，讓您不必離開目前正在使用的
 
 ## 設定
 
-設定位於 NVDA 設定對話框中的 **Invisinote** 類別，
-按下 NVDA+ALT+SHIFT+P 可直接開啟該類別。
+設定位於 NVDA 設定對話框（NVDA+CTRL+S）中的 **Invisinote** 類別。
+NVDA 的「輸入手勢」對話框中，invisinote 類別下有「開啟 Invisinote 設定」指令，
+可直接跳至該類別；若您想要專屬快速鍵，可在此自行指派。
 
 * **資料夾** — Invisinote 讀取筆記的資料夾。可用 NVDA+ALT+\[ 和 NVDA+ALT+]
   在這些資料夾之間移動。

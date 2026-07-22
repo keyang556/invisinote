@@ -25,7 +25,6 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
 	"addon_description": _("""Browse notes virtually from configured folders.
 
-- NVDA+ALT+SHIFT+P: open the Invisinote settings
 - NVDA+ALT+P: open path
 - NVDA+ALT+E: cycle note encoding
 - NVDA+ALT+SHIFT+E: cycle note encoding backwards

@@ -7,8 +7,8 @@ while the app you are in keeps the focus.
 
 ## Getting started
 
-1. Open NVDA's Settings dialog and choose the **Invisinote**
-   category, or press NVDA+ALT+SHIFT+P from anywhere.
+1. Open NVDA's Settings dialog (NVDA+CTRL+S) and choose the **Invisinote**
+   category.
 2. Add one or more folders that contain your notes, and the file extensions to
    read (`txt` by default).
 3. Press NVDA+ALT+N to load the notes in the current folder. NVDA announces how
@@ -23,7 +23,6 @@ files you have added or changed since.
 
 ### Folders and notes
 
-* NVDA+ALT+SHIFT+P: open the Invisinote settings
 * NVDA+ALT+P: open the current folder in File Explorer
 * NVDA+ALT+\[: previous folder
 * NVDA+ALT+]: next folder
@@ -64,8 +63,10 @@ selection command clears the selection markers.
 
 ## Settings
 
-Settings live in NVDA's Settings dialog under the **Invisinote**
-category, and NVDA+ALT+SHIFT+P opens that category directly.
+Settings live in NVDA's Settings dialog (NVDA+CTRL+S) under the **Invisinote**
+category. An **Open Invisinote settings** command that jumps straight to that
+category is available in NVDA's Input Gestures dialog, under the invisinote
+category, if you would like to assign a shortcut of your own.
 
 * **Folders** — the folders Invisinote reads notes from. Move between them with
   NVDA+ALT+\[ and NVDA+ALT+].

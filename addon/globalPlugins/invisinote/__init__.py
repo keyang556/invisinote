@@ -343,6 +343,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@script(description=_("Open Invisinote settings"))
 	def script_open_settings(self, gesture):
 		# Opens NVDA's Settings dialog focused on our own category.
+		# Intentionally unassigned: users bind their own gesture via Input Gestures.
 		wx.CallAfter(
 			gui.mainFrame.popupSettingsDialog,
 			settingsDialogs.NVDASettingsDialog,
@@ -663,7 +664,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	__gestures = {
 		"kb:NVDA+ALT+P": "open_path",
-		"kb:NVDA+ALT+SHIFT+P": "open_settings",
 		"kb:NVDA+ALT+E": "cycle_encoding",
 		"kb:NVDA+ALT+SHIFT+E": "cycle_encoding_back",
 		"kb:NVDA+ALT+[": "previous_folder",
