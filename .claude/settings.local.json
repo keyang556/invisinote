@@ -39,7 +39,15 @@
       "PowerShell(pre-commit run --all-files 2>&1 | Select-Object -Last 40)",
       "PowerShell(python -m pre_commit run --all-files 2>&1 | Select-Object -Last 40)",
       "PowerShell(ruff *)",
-      "PowerShell(python -c \"import ast; ast.parse\\(open\\('addon/globalPlugins/invisinote/__init__.py', encoding='utf-8'\\).read\\(\\)\\); print\\('AST parses ok'\\)\")"
+      "PowerShell(python -c \"import ast; ast.parse\\(open\\('addon/globalPlugins/invisinote/__init__.py', encoding='utf-8'\\).read\\(\\)\\); print\\('AST parses ok'\\)\")",
+      "WebSearch",
+      "WebFetch(domain:download.nvaccess.org)",
+      "WebFetch(domain:groups.google.com)",
+      "Bash(gh auth *)",
+      "Bash(gh run *)",
+      "Bash(python *)",
+      "Bash(pip install *)",
+      "PowerShell(Test-Path *)"
     ]
   }
 }
