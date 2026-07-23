@@ -7,7 +7,7 @@ while the app you are in keeps the focus.
 
 ## Getting started
 
-1. Open NVDA's Settings dialog (NVDA+CTRL+S) and choose the **Invisinote**
+1. Open NVDA's Settings dialog and choose the **Invisinote**
    category.
 2. Add one or more folders that contain your notes, and the file extensions to
    read (`txt` by default).
@@ -63,7 +63,7 @@ selection command clears the selection markers.
 
 ## Settings
 
-Settings live in NVDA's Settings dialog (NVDA+CTRL+S) under the **Invisinote**
+Settings live in NVDA's Settings dialog under the **Invisinote**
 category. An **Open Invisinote settings** command that jumps straight to that
 category is available in NVDA's Input Gestures dialog, under the invisinote
 category, if you would like to assign a shortcut of your own.
